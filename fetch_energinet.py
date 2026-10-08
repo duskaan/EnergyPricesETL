@@ -67,13 +67,8 @@ def save_to_s3(bucket, records_by_date):
         logging.info(f"I uploaded a file to the path {file_name} with {len(records)} records")
 
 def run(start_date, end_date):
-    
-    #get env variables
-    load_dotenv()
     BUCKET = os.environ["S3_BUCKET"]
     
-    parameter = {}
-
     testing = False
     parameter= {"filter": json.dumps({"PriceArea":["DK1", "DK2"]})}
     
@@ -122,8 +117,9 @@ if __name__ == '__main__':
         datefmt="%Y-%m-%d %H:%M",
         level=logging.INFO
     )
-    
+    #get env variables
     from dotenv import load_dotenv
+    load_dotenv()
 
     run(sys.argv[1],sys.argv[2])
 
