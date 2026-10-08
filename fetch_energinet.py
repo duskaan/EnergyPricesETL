@@ -1,33 +1,6 @@
-import requests, pandas as pd, json
+import requests, json, boto3, sys, os, logging
 from requests.exceptions import HTTPError
 from collections import defaultdict
-import boto3
-#from botocore.exceptions import ClientError
-
-
-import os
-from dotenv import load_dotenv
-#get env variables
-load_dotenv()
-BUCKET = os.environ["S3_BUCKET"]
-
-
-#logging
-import logging
-logging.basicConfig(
-    filename="app.log",
-    encoding="utf-8",
-    filemode="a",
-    format="{asctime} - {levelname} - {message}",
-    style="{",
-    datefmt="%Y-%m-%d %H:%M",
-    level=logging.INFO
-)
-logging.debug("This is a new log.")
-
-
-testing = False
-parameter= {"filter": json.dumps({"PriceArea":["DK1", "DK2"]})}
 
 def getParams(startDate=0, endDate=0, tomorrow=False): 
     """Build the start and end values for the Energinet API.
@@ -63,68 +36,90 @@ def getParams(startDate=0, endDate=0, tomorrow=False):
 
     return start, end
 
-#https://api.energidataservice.dk/dataset/DayAheadPrices?offset=0&start=2026-10-06T00:00&end=2026-10-06T23:59&sort=TimeUTC%20DESC
 
-#parameter["start"], parameter["end"] = getParams(tomorrow=True)
-#parameter["start"], parameter["end"] = getParams() #Yesterday
-#parameter["start"], parameter["end"] = getParams(startDate=f'{start_date}T00:00', endDate='{end_date}T23:59') #full days based on variable from airflow
-parameter["start"], parameter["end"] = getParams(startDate='2026-09-25', endDate='2026-10-06')
-#if i need to use a specific date everytime and just want to take Airflows date -> then use this from datetime import datetime datetime.today().strftime('%Y-%m-%d')
-
-
-
-
-URL = "https://api.energidataservice.dk/dataset/DayAheadPrices"
-
-if(testing):
-    parameter["limit"]=20
-try:
+def call_API(URL, parameter):
     r = requests.get(URL, params=parameter, timeout=30)
     r.raise_for_status()
+    return r.json()['records']
 
-    json_records = r.json()['records']
-   
-    count = len(json_records)
-    if(count==0):
-        raise ValueError("There are no records for the choosen day, select a different date range or try again after .. o clock")
-    #time_stamp = r.json()['records'][0]['TimeDK'].split('T',1)[0]
-   
-    
-    records_by_date = defaultdict(list)
+def split_records_by_date(json_records):
+    split_by_date = defaultdict(list)
 
     for record in json_records:
-        records_by_date[record['TimeDK'][:10]].append(record)
+        split_by_date[record['TimeDK'][:10]].append(record)
 
-    #logging.info(records_by_date.keys())
-    logging.info(records_by_date.values())
+    logging.info(split_by_date.keys())
+    return split_by_date
+
+def save_to_s3(bucket, records_by_date):
     s3 = boto3.client('s3')
-
+    
     for date,records in records_by_date.items():
         file_name = f'raw/dayaheadprices/date={date}/dayaheadprices.json'
 
         #create file here for that specific date
-        #s3object = s3.Object(BUCKET, file_name)
         s3.put_object(
-            Bucket=BUCKET,
+            Bucket=bucket,
             Key=file_name,
-            Body=(bytes(json.dumps(records).encode('UTF-8'))),
+            Body=(json.dumps(records).encode('UTF-8')),
             ContentType='application/json'
         )
         logging.info(f"I uploaded a file to the path {file_name} with {len(records)} records")
 
-    #logging.info(f"There are {count} rows and the following values {df.head()}")
-except requests.exceptions.Timeout:
-    logging.exception("Timed out")
-    raise
-except HTTPError as http_err:
-    logging.exception(f'HTTP error occurred: {http_err}')
-    raise
-except Exception as err:
-    #logging.exception(err)
-    logging.exception('Error occurred')
-    raise 
+def run(start_date, end_date):
+    BUCKET = os.environ["S3_BUCKET"]
+    
+    testing = False
+    parameter= {"filter": json.dumps({"PriceArea":["DK1", "DK2"]})}
+    
+    parameter["start"], parameter["end"] = getParams(startDate=start_date, endDate=end_date)
+
+    #parameter["start"], parameter["end"] = getParams(tomorrow=True) #Tomorrow
+    #parameter["start"], parameter["end"] = getParams() #Yesterday
+    #parameter["start"], parameter["end"] = getParams(startDate='2026-09-25', endDate='2026-10-06') #select dates
+
+    URL = "https://api.energidataservice.dk/dataset/DayAheadPrices"
+
+    if(testing):
+        parameter["limit"]=20
+    try:
+        
+        json_records = call_API(URL, parameter)
+    
+        if(len(json_records)==0):
+            raise ValueError("There are no records for the choosen day(s), select a different date range or try again after .. o clock")
+    
+        records_by_date = split_records_by_date(json_records)
+        save_to_s3(records_by_date=records_by_date, bucket=BUCKET)
+
+    except requests.exceptions.Timeout:
+        logging.exception("Timed out")
+        raise
+    except HTTPError as http_err:
+        logging.exception(f'HTTP error occurred: {http_err}')
+        raise
+    except Exception as err:
+        #logging.exception(err)
+        logging.exception('Error occurred')
+        raise 
 
 
 
 
+if __name__ == '__main__':
+    #Set logging config 
+    logging.basicConfig(
+        filename="app.log",
+        encoding="utf-8",
+        filemode="a",
+        format="{asctime} - {levelname} - {message}",
+        style="{",
+        datefmt="%Y-%m-%d %H:%M",
+        level=logging.INFO
+    )
+    #get env variables
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    run(sys.argv[1],sys.argv[2])
 
