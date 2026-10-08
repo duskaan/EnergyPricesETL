@@ -1,5 +1,17 @@
 import requests, pandas as pd, json
 from requests.exceptions import HTTPError
+from collections import defaultdict
+import boto3
+#from botocore.exceptions import ClientError
+
+
+import os
+from dotenv import load_dotenv
+#get env variables
+load_dotenv()
+BUCKET = os.environ["S3_BUCKET"]
+
+
 #logging
 import logging
 logging.basicConfig(
@@ -47,15 +59,16 @@ def getParams(startDate=0, endDate=0, tomorrow=False):
         start='StartOfDay-P1D'
         end='StartOfDay'
     else:
-        raise Exception("This is not a valid date you have provided")
+        raise ValueError("This is not a valid date you have provided")
 
     return start, end
 
 #https://api.energidataservice.dk/dataset/DayAheadPrices?offset=0&start=2026-10-06T00:00&end=2026-10-06T23:59&sort=TimeUTC%20DESC
 
+#parameter["start"], parameter["end"] = getParams(tomorrow=True)
 #parameter["start"], parameter["end"] = getParams() #Yesterday
 #parameter["start"], parameter["end"] = getParams(startDate=f'{start_date}T00:00', endDate='{end_date}T23:59') #full days based on variable from airflow
-parameter["start"], parameter["end"] = getParams(startDate='2026-10-06', endDate='2026-10-06')
+parameter["start"], parameter["end"] = getParams(startDate='2026-09-25', endDate='2026-10-06')
 #if i need to use a specific date everytime and just want to take Airflows date -> then use this from datetime import datetime datetime.today().strftime('%Y-%m-%d')
 
 
@@ -68,13 +81,38 @@ if(testing):
 try:
     r = requests.get(URL, params=parameter, timeout=30)
     r.raise_for_status()
-    #print(r.text)
-    
-    df = pd.DataFrame(r.json()['records'])
-    count = len(df)
+
+    json_records = r.json()['records']
+   
+    count = len(json_records)
     if(count==0):
         raise ValueError("There are no records for the choosen day, select a different date range or try again after .. o clock")
-    logging.info(f"There are {count} rows and the following values {df.head()}")
+    #time_stamp = r.json()['records'][0]['TimeDK'].split('T',1)[0]
+   
+    
+    records_by_date = defaultdict(list)
+
+    for record in json_records:
+        records_by_date[record['TimeDK'][:10]].append(record)
+
+    #logging.info(records_by_date.keys())
+    logging.info(records_by_date.values())
+    s3 = boto3.client('s3')
+
+    for date,records in records_by_date.items():
+        file_name = f'raw/dayaheadprices/date={date}/dayaheadprices.json'
+
+        #create file here for that specific date
+        #s3object = s3.Object(BUCKET, file_name)
+        s3.put_object(
+            Bucket=BUCKET,
+            Key=file_name,
+            Body=(bytes(json.dumps(records).encode('UTF-8'))),
+            ContentType='application/json'
+        )
+        logging.info(f"I uploaded a file to the path {file_name} with {len(records)} records")
+
+    #logging.info(f"There are {count} rows and the following values {df.head()}")
 except requests.exceptions.Timeout:
     logging.exception("Timed out")
     raise
