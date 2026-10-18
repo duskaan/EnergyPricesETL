@@ -2,6 +2,8 @@ import requests, json, boto3, sys, os, logging
 from requests.exceptions import HTTPError
 from collections import defaultdict
 
+
+
 def getParams(startDate=0, endDate=0, tomorrow=False): 
     """Build the start and end values for the Energinet API.
 
@@ -79,7 +81,7 @@ def run(start_date, end_date):
     #parameter["start"], parameter["end"] = getParams(startDate='2026-09-25', endDate='2026-10-06') #select dates
 
     URL = "https://api.energidataservice.dk/dataset/DayAheadPrices"
-
+    
     if(testing):
         parameter["limit"]=20
     try:
@@ -91,6 +93,9 @@ def run(start_date, end_date):
     
         records_by_date = split_records_by_date(json_records)
         save_to_s3(records_by_date=records_by_date, bucket=BUCKET)
+
+
+        #save_to_s3(records_by_date=split_records_by_date(call_API(URL, parameter)), bucket= BUCKET)
 
     except requests.exceptions.Timeout:
         logging.exception("Timed out")
@@ -109,7 +114,7 @@ def run(start_date, end_date):
 if __name__ == '__main__':
     #Set logging config 
     logging.basicConfig(
-        filename="app.log",
+        #filename="app.log",
         encoding="utf-8",
         filemode="a",
         format="{asctime} - {levelname} - {message}",
@@ -120,6 +125,6 @@ if __name__ == '__main__':
     #get env variables
     from dotenv import load_dotenv
     load_dotenv()
-
+    
     run(sys.argv[1],sys.argv[2])
 
