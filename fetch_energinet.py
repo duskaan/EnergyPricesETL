@@ -58,12 +58,12 @@ def save_to_s3(bucket, records_by_date):
     
     for date,records in records_by_date.items():
         file_name = f'raw/dayaheadprices/date={date}/dayaheadprices.json'
-
+        body = "\n".join(json.dumps(record) for record in records)
         #create file here for that specific date
         s3.put_object(
             Bucket=bucket,
             Key=file_name,
-            Body=(json.dumps(records).encode('UTF-8')),
+            Body=(body.encode('UTF-8')),
             ContentType='application/json'
         )
         logging.info(f"I uploaded a file to the path {file_name} with {len(records)} records")
