@@ -12,7 +12,6 @@ It runs on managed AWS services (S3, Glue, Glue Data Catalog, Athena) with least
 The data is Energinet's day-ahead electricity prices for Denmark: the price per
 quarter-hour, set the day before, for the two Danish price areas (DK1 West, DK2 East).
 It is public, updated daily, and has real-world quirks worth handling properly
-(see [The data and its quirks](#the-data-and-its-quirks)).
 
 ## What the data is meant to show
 
@@ -151,7 +150,8 @@ Prerequisites: Docker Desktop, an AWS account, Python 3 for local runs.
 ![Duration of the last 10 DAG runs](docs/images/airflow-run-durations.png)
 
 A normal daily run takes about 1–2 minutes end to end, most of it Glue starting up.
-<!-- TODO: explain the ~22-minute run on 20 Oct (e.g. a full ALL reprocessing) -->
+
+The 22 minute run was a backfill run of all the data available on this API.
 
 ## Next steps
 
