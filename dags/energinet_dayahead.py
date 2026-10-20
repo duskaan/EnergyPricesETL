@@ -1,7 +1,8 @@
-import fetch_energinet
+import fetch_energinet, athena_checks
 import pendulum
 from datetime import  timedelta, date
 from airflow.sdk import dag, task, Param
+from airflow.providers.amazon.aws.operators.glue import GlueJobOperator
 
 @dag(
     dag_id="energinet_dayahead",
@@ -19,14 +20,33 @@ def energinet_dayahead():
     def pull_data_to_s3(params=None,ds=None):
         if(params["start_date"] and params["end_date"]):
             fetch_energinet.run(params["start_date"],params["end_date"])
+            return "ALL"
         else:
             dt = (date.fromisoformat(ds) + timedelta(days=1)).isoformat()
             fetch_energinet.run(dt,dt)
-
+            return dt
+ 
     @task
     def print_date(ds= None):
         print(f"The run date is {ds}")
 
-    pull_data_to_s3() >> print_date()
+
+    #@task
+    #def glue_clean(target_date=None):
+    #    run_glue_job = AwsGlueJobOperator(task_id="glue_clean", job_name="clean_dayaheadprices", script_args={"--date": target_date}, wait_for_completion=True, region_name="eu-central-1")
+    #    run_glue_job
+    
+    @task
+    def check_in_athena(target_date):
+        athena_checks.check_day(target_date)
+    
+        
+
+    target_date =pull_data_to_s3()
+    glue = GlueJobOperator(task_id="glue_clean", job_name="clean_dayaheadprices", script_args={"--date": target_date}, wait_for_completion=True, region_name="eu-central-1")
+    
+    check = check_in_athena(target_date)
+    glue >> check
+
 
 energinet_dayahead()
