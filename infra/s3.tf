@@ -1,7 +1,7 @@
 resource "aws_s3_bucket_public_access_block" "data" {
   block_public_acls       = true
   block_public_policy     = true
-  bucket                  = var.bucket_name
+  bucket                  = aws_s3_bucket.data.id
   ignore_public_acls      = true
   region                  = "eu-central-1"
   restrict_public_buckets = true

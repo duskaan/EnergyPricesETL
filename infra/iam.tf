@@ -1,6 +1,6 @@
 resource "aws_iam_role_policy_attachment" "glue_service" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
-  role       = "GlueRole"
+  role       = aws_iam_role.glue.name
 }
 
 # "GlueRole:AWSGlueConsoleRoleInlinePolicy-read-and-write-specific-access-1792439405213"
@@ -14,7 +14,7 @@ resource "aws_iam_role_policy" "glue_s3" {
     }]
     Version = "2012-10-17"
   })
-  role = "GlueRole"
+  role = aws_iam_role.glue.name
 }
 
 # "GlueRole"
@@ -29,7 +29,7 @@ resource "aws_iam_role" "glue" {
     }]
     Version = "2012-10-17"
   })
-  description           = "Allows S3 to call AWS services on your behalf."
+  description           = "Allows glue to call S3 buckets on its behalf."
   force_detach_policies = false
   max_session_duration  = 3600
   name                  = "GlueRole"
