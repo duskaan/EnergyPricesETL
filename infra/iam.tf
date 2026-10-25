@@ -10,7 +10,7 @@ resource "aws_iam_role_policy" "glue_s3" {
     Statement = [{
       Action   = ["s3:GetObject", "s3:ListBucket", "s3:PutObject", "s3:DeleteObject"]
       Effect   = "Allow"
-      Resource = [resource.aws_s3_bucket.data.arn, "${resource.aws_s3_bucket.data.arn}/*", ]
+      Resource = [aws_s3_bucket.data.arn, "${aws_s3_bucket.data.arn}/*", ]
     }]
     Version = "2012-10-17"
   })
@@ -29,12 +29,8 @@ resource "aws_iam_role" "glue" {
     }]
     Version = "2012-10-17"
   })
-  description           = "Allows glue to call S3 buckets on its behalf."
-  force_detach_policies = false
-  max_session_duration  = 3600
-  name                  = "GlueRole"
-  path                  = "/"
-  permissions_boundary  = null
+  description = "Allows glue to call S3 buckets on its behalf."
+  name        = "GlueRole"
 }
 
 
@@ -42,19 +38,14 @@ resource "aws_iam_role" "glue" {
 resource "aws_iam_role" "etl" {
   assume_role_policy = jsonencode({
     Statement = [{
-      Action    = "sts:AssumeRole"
-      Condition = {}
-      Effect    = "Allow"
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
       Principal = {
         AWS = "arn:aws:iam::407525820051:user/Tim_DEV"
       }
     }]
     Version = "2012-10-17"
   })
-  description           = null
-  force_detach_policies = false
-  max_session_duration  = 3600
-  name                  = "etl"
-  path                  = "/"
-  permissions_boundary  = null
+  description = "Role to upload the files from API to S3 bucket"
+  name        = "etl"
 }
