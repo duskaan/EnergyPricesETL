@@ -5,6 +5,5 @@ provider "aws" {
       Environment = "Prod"
       Project     = "EnergyPricesETL"
     }
-
   }
 }
