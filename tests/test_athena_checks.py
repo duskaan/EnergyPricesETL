@@ -29,7 +29,7 @@ def test_check_day_raises_when_bad_data(monkeypatch):
     with pytest.raises(ValueError):
         athena_checks.check_day("2026-10-04")
 
-def test_check_day_raises_when_good_data(monkeypatch):
+def test_check_day_succeeds_when_good_data(monkeypatch):
     def fake_query(sql):
         # same shape as Athena: header row, then one data row (bad_days, days_found)
         return {"ResultSet": {"Rows": [

@@ -119,7 +119,7 @@ def run(start_date, end_date):
 
 if __name__ == '__main__':
     #Set logger config 
-    logger.basicConfig(
+    logging.basicConfig(
         #filename="app.log",
         encoding="utf-8",
         filemode="a",

@@ -55,4 +55,3 @@ def test_split_records_date():
     assert(set(split_data.keys())=={"2026-10-04","2026-10-05"})
     assert len(split_data["2026-10-04"]) == 2
     assert len(split_data["2026-10-05"]) == 1
-    
