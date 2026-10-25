@@ -1,8 +1,14 @@
-import requests, json, boto3, sys, os, logging
-from requests.exceptions import HTTPError
+import json
+import logging
+import os
+import sys
 from collections import defaultdict
 
+import boto3
+import requests
+from requests.exceptions import HTTPError
 
+logger = logging.getLogger(__name__)
 
 def getParams(startDate=0, endDate=0, tomorrow=False): 
     """Build the start and end values for the Energinet API.
@@ -50,7 +56,7 @@ def split_records_by_date(json_records):
     for record in json_records:
         split_by_date[record['TimeDK'][:10]].append(record)
 
-    logging.info(split_by_date.keys())
+    logger.info(split_by_date.keys())
     return split_by_date
 
 def save_to_s3(bucket, records_by_date):
@@ -66,7 +72,7 @@ def save_to_s3(bucket, records_by_date):
             Body=(body.encode('UTF-8')),
             ContentType='application/json'
         )
-        logging.info(f"I uploaded a file to the path {file_name} with {len(records)} records")
+        logger.info(f"I uploaded a file to the path {file_name} with {len(records)} records")
 
 def run(start_date, end_date):
     BUCKET = os.environ["S3_BUCKET"]
@@ -98,22 +104,22 @@ def run(start_date, end_date):
         #save_to_s3(records_by_date=split_records_by_date(call_API(URL, parameter)), bucket= BUCKET)
 
     except requests.exceptions.Timeout:
-        logging.exception("Timed out")
+        logger.exception("Timed out")
         raise
-    except HTTPError as http_err:
-        logging.exception(f'HTTP error occurred: {http_err}')
+    except HTTPError:
+        logger.exception('HTTP error occurred:')
         raise
-    except Exception as err:
-        #logging.exception(err)
-        logging.exception('Error occurred')
+    except Exception:
+        #logger.exception(err)
+        logger.exception('Error occurred')
         raise 
 
 
 
 
 if __name__ == '__main__':
-    #Set logging config 
-    logging.basicConfig(
+    #Set logger config 
+    logger.basicConfig(
         #filename="app.log",
         encoding="utf-8",
         filemode="a",

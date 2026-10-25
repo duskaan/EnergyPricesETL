@@ -1,8 +1,12 @@
-import fetch_energinet, athena_checks
+from datetime import date, timedelta
+
 import pendulum
-from datetime import  timedelta, date
-from airflow.sdk import dag, task, Param
 from airflow.providers.amazon.aws.operators.glue import GlueJobOperator
+from airflow.sdk import Param, dag, task
+
+import athena_checks
+import fetch_energinet
+
 
 @dag(
     dag_id="energinet_dayahead",
