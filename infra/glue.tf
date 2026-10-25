@@ -21,7 +21,7 @@ resource "aws_glue_job" "clean_dayaheadprices" {
     "--job-language"                     = "python"
     "--spark-event-logs-path"            = "s3://aws-glue-assets-407525820051-eu-central-1/sparkHistoryLogs/"
   }
-  description               = null
+  description               = "This job is set to clean the data from the raw energyprices a day ahead to a clean version back in s3"
   execution_class           = "STANDARD"
   glue_version              = "5.1"
   job_mode                  = "SCRIPT"
@@ -34,14 +34,12 @@ resource "aws_glue_job" "clean_dayaheadprices" {
   region                    = "eu-central-1"
   role_arn                  = aws_iam_role.glue.arn
   security_configuration    = null
-  tags                      = {}
-  tags_all                  = {}
   timeout                   = 10
   worker_type               = "G.1X"
   command {
     name            = "glueetl"
     python_version  = "3"
-    script_location = "s3://aws-glue-assets-407525820051-eu-central-1/scripts/clean_dayaheadprices.py"
+    script_location = "s3://${aws_s3_object.glue_etl_script.bucket}/${aws_s3_object.glue_etl_script.key}"
   }
   execution_property {
     max_concurrent_runs = 1

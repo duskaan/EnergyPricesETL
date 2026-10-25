@@ -8,9 +8,9 @@ resource "aws_iam_role_policy" "glue_s3" {
   name = "AWSGlueConsoleRoleInlinePolicy-read-and-write-specific-access-1792439405213"
   policy = jsonencode({
     Statement = [{
-      Action   = ["s3:GetObject", "s3:ListBucket", "s3:PutObject","s3:DeleteObject"]
+      Action   = ["s3:GetObject", "s3:ListBucket", "s3:PutObject", "s3:DeleteObject"]
       Effect   = "Allow"
-      Resource = ["arn:aws:s3:::energyprices-etl-tim-v1/*", "arn:aws:s3:::energyprices-etl-tim-v1"]
+      Resource = [resource.aws_s3_bucket.data.arn, "${resource.aws_s3_bucket.data.arn}/*", ]
     }]
     Version = "2012-10-17"
   })
@@ -35,8 +35,6 @@ resource "aws_iam_role" "glue" {
   name                  = "GlueRole"
   path                  = "/"
   permissions_boundary  = null
-  tags                  = {}
-  tags_all              = {}
 }
 
 
@@ -59,6 +57,4 @@ resource "aws_iam_role" "etl" {
   name                  = "etl"
   path                  = "/"
   permissions_boundary  = null
-  tags                  = {}
-  tags_all              = {}
 }
