@@ -1,7 +1,15 @@
-import os, time, boto3,logging, sys
+import logging
+import os
+import sys
+import time
+
+import boto3
+
+logger = logging.getLogger(__name__)
+
 
 def run_athena_query(sql):
-    logging.info("The sql query is "+sql)
+    logger.info("The sql query is "+sql)
     
     athena = boto3.client("athena", region_name="eu-central-1")
     bucket = os.environ["S3_BUCKET"]
@@ -18,7 +26,7 @@ def run_athena_query(sql):
             break
         time.sleep(2)
 
-    logging.info("The state is " +state["State"])
+    logger.info("The state is " +state["State"])
                  
     if state["State"] != "SUCCEEDED":
         raise RuntimeError(f"Athena query {state['State']}: {state.get('StateChangeReason')}")
@@ -52,12 +60,12 @@ def check_day(price_date):
     count_days_found= int(check_result["ResultSet"]["Rows"][1]["Data"][1]["VarCharValue"])
 
     if count_bad_days==0 and count_days_found>0:
-        logging.info("The query succeeded")
+        logger.info("The query succeeded")
     else:
         raise ValueError(f"Expected 184, 192 or 200 rows for {price_date}, got {count_bad_days} bad day and total of {count_days_found} days found")
 
 if __name__ == '__main__':
-    #Set logging config 
+    #Set logger config 
     logging.basicConfig(
         #filename="app.log",
         encoding="utf-8",
